@@ -10,11 +10,12 @@ CS = 25
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
-GPIO.setup(clkPin, GPIO.OUT)
-GPIO.setup(misoPin, GPIO.IN)
-GPIO.setup(mosiPin, GPIO.OUT)
-GPIO.setup(csPin, GPIO.OUT)
+GPIO.setup(CLK, GPIO.OUT)
+GPIO.setup(MISO, GPIO.IN)
+GPIO.setup(MOSI, GPIO.OUT)
+GPIO.setup(CS, GPIO.OUT)
 # --- SETUP --- #
+
 
 def readAdc(channel, clkPin, misoPin, mosiPin, csPin):
     
@@ -40,19 +41,20 @@ def sendBits(data, numBits, clkPin, mosiPin):
     data = data << (8 - numBits)
     
     for bit in range(numBits):
-	
+    
         if data & 0x80: GPIO.output(mosiPin, GPIO.HIGH)
-	else: GPIO.output(mosiPin, GPIO.LOW)
+    else: GPIO.output(mosiPin, GPIO.LOW)
         
-        data <<= 1
+    data <<= 1
         
-        GPIO.output(clkPin, GPIO.HIGH)
-        GPIO.output(clkPin, GPIO.LOW)
+    GPIO.output(clkPin, GPIO.HIGH)
+    GPIO.output(clkPin, GPIO.LOW)
 
 def toFarenheit(temp_c):
     return (temp_c * 9 / 5) + 32
 
 def getTemperature(ADC_value,rref):
+    #T0 = 
     temperature = 1/( (1/(273+25))+(1/(3830))*math.log(((1023/ADC_value - 1) * rref)/5000))-273
     return toFarenheit(temperature)
 
@@ -61,7 +63,7 @@ def recvBits(numBits, clkPin, misoPin):
     retVal = 0
     
     for bit in range(numBits):
-	
+    
         GPIO.output(clkPin, GPIO.HIGH)
         GPIO.output(clkPin, GPIO.LOW)
         
@@ -73,28 +75,28 @@ def recvBits(numBits, clkPin, misoPin):
 
 if __name__ == '__main__':
     try:
-	
-	ADC_sum = 0
-	ADC_count = 0
-	period = 0.1
-	rref = 1000
     
-	while True:
-	    
-		ADC_value = readAdc(0, CLK, MISO, MOSI, CS)
-		
-		ADC_sum += ADC_value
-		ADC_count += 1
-		ADC_average = ADC_sum/ADC_count
-		temperature = getTemperature(ADC_value,rref)
-		avg_temperature = getTemperature(ADC_average,rref)
-		
-		print("ADC Result: ", str(ADC_value), " Average: ", str(ADC_average)[:5])
-		print("Temperature Result: ", str(temperature), " Temperature Average: ", str(avg_temperature)[:5])
-		print()
-		
-		time.sleep(period)
-		
-    except KeyboardInterrupt:	    # stop when pressing control + C
-	    GPIO.cleanup()
-	    sys.exit(0)
+        ADC_sum = 0
+        ADC_count = 0
+        period = 0.1
+        rref = 1000
+        
+        while True:
+            
+            ADC_value = readAdc(0, CLK, MISO, MOSI, CS)
+            
+            ADC_sum += ADC_value
+            ADC_count += 1
+            ADC_average = ADC_sum/ADC_count
+            temperature = getTemperature(ADC_value,rref)
+            avg_temperature = getTemperature(ADC_average,rref)
+            
+            print("ADC Result: ", str(ADC_value), " Average: ", str(ADC_average)[:5])
+            print("Temperature Result: ", str(temperature), " Temperature Average: ", str(avg_temperature)[:5])
+            print()
+            
+            time.sleep(period)
+            
+    except KeyboardInterrupt:       # stop when pressing control + C
+        GPIO.cleanup()
+        sys.exit(0)

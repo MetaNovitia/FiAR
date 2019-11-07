@@ -1,53 +1,49 @@
 import picamera
-from PIL import Image
+from spi import readAdc, getTemperature
+from PIL import Image, ImageDraw, ImageFont
 from time import sleep
+import random
+
+#---------- setup ----------#
+
+CLK = 18
+MISO = 23
+MOSI = 24
+CS = 25
+channel = 0
+rref = 1000
+
+img_size = (500,500)
+txt_size = (300,300)
+screen_size = (1280,720)
+txt_pos = (0,0)
 
 camera = picamera.PiCamera()
-camera.resolution = (1280, 720)
-camera.framerate = 24
+camera.resolution = screen_size
+camera.exposure_mode = "sports"
 camera.start_preview()
 
-# Load the arbitrarily sized image
-img = Image.open('heart.png')
-# Create an image padded to the required size with
-# mode 'RGB'
-pad = Image.new('RGBA', (
-    ((img.size[0] + 31) // 32) * 32,
-    ((img.size[1] + 15) // 16) * 16,
-    ))
-# Paste the original image into the padded one
-pad.paste(img, (0, 0))
+img = Image.new('RGBA',img_size,color=(0,0,0,0))
+font = ImageFont.truetype("OpenSans-Regular.ttf",size=100)
+d = ImageDraw.Draw(img)
+pad = Image.new('RGBA', screen_size)
+overlay1 = camera.add_overlay(pad.tobytes(),format="rgba",size=pad.size)    
+#---------- setup ----------#
+ct = 0
+while(True):
+    #ADC_value = readAdc(channel, CLK, MISO, MOSI, CS)
+    ADC_value = 1+(ct%1022)
+    ct+=1
+    temperature = getTemperature(ADC_value, rref)
+    print(ADC_value, temperature)
+    sleep(0.1)
+    
+    d.rectangle([(0,0),img_size],fill=(255,255,255,0))
+    d.text(txt_pos,str(int(temperature)), font=font, fill=(255,255,0))
 
-pad2 = Image.new('RGBA', (
-    ((img.size[0] + 31) // 32) * 32,
-    ((img.size[1] + 15) // 16) * 16,
-    ))
-# Paste the original image into the padded one
-pad2.paste(img, (300, 0))
-
-pad2 = Image.new('RGBA', (
-    ((img.size[0] + 31) // 32) * 32,
-    ((img.size[1] + 15) // 16) * 16,
-    ))
-# Paste the original image into the padded one
-pad2.paste(img, (-300, 0))
-
-
-# Add the overlay with the padded image as the source,
-# but the original image's dimensions
-o = camera.add_overlay(pad.tobytes(), size=img.size)
-# By default, the overlay is in layer 0, beneath the
-# preview (which defaults to layer 2). Here we make
-# the new overlay semi-transparent, then move it above
-# the preview
-o.alpha = 128
-o.layer = 3
-c = 0
-# Wait indefinitely until the user terminates the script
-while True:
-    c = 1-c
-    camera.remove_overlay(o)
-    o = camera.add_overlay([pad,pad2][c].tobytes(), size=img.size)
-    o.alpha = 128
-    o.layer = 3
-    sleep(1)
+    pad.paste(img, (100, 100))
+    overlay2 = camera.add_overlay(pad.tobytes(),format="rgba",size=pad.size)
+    overlay2.alpha = 128
+    overlay2.layer = 3
+    camera.remove_overlay(overlay1)
+    overlay1=overlay2
