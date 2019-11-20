@@ -18,8 +18,8 @@ img_size        = (500,90)
 screen_size     = (1280,720)
 temp_text_pos   = (1050,500)
 hr_text_pos     = (1050,580)
-heart_pos       = (980,510)
-thermo_pos      = (980,590)
+thermo_pos      = (980,510)
+heart_pos       = (980,590)
 font_size       = 50
 
 camera = picamera.PiCamera()
@@ -28,17 +28,17 @@ camera.exposure_mode = "sports"
 camera.start_preview()
 
 font        = ImageFont.truetype("OpenSans-Regular.ttf",size=font_size)
-img         = Image.new('RGBA',img_size,color=Color4.transparent)
-temp_text   = ImageDraw.Draw(img)
-img2        = Image.new('RGBA',img_size,color=Color4.transparent)
-hr_text     = ImageDraw.Draw(img2)
+temp_text   = Image.new('RGBA',img_size,color=Color4.transparent)
+temp_draw   = ImageDraw.Draw(temp_text)
+hr_text     = Image.new('RGBA',img_size,color=Color4.transparent)
+hr_draw     = ImageDraw.Draw(hr_text)
 
 
 heart       = Image.open("heart.png").resize((50,50))
 thermo      = Image.open("thermo.png").resize((50,50))
 pad         = Image.new('RGBA', screen_size)
-pad.paste(img, hr_text_pos)
-pad.paste(img2, temp_text_pos)
+pad.paste(hr_text, hr_text_pos)
+pad.paste(temp_text, temp_text_pos)
 pad.paste(heart, heart_pos)
 pad.paste(thermo, thermo_pos)
 overlay = camera.add_overlay(pad.tobytes(),format="rgba",size=pad.size)
@@ -56,14 +56,14 @@ while(True):
     sleep(0.5)
     
     # clear and redraw
-    temp_text.rectangle([(0,0),img_size],fill=Color4.transparent)
-    temp_text.text((0,0),str(int(temperature)), font=font, fill=Color3.black)
-    hr_text.rectangle([(0,0),img_size],fill=Color4.transparent)
-    hr_text.text((0,0),str(int(heartrate)), font=font, fill=Color3.black)
+    temp_draw.rectangle([(0,0),img_size],fill=Color4.transparent)
+    temp_draw.text((0,0),str(int(temperature)), font=font, fill=Color3.black)
+    hr_draw.rectangle([(0,0),img_size],fill=Color4.transparent)
+    hr_draw.text((0,0),str(int(heartrate)), font=font, fill=Color3.black)
 
     # create overlay using drawing
-    pad.paste(img, hr_text_pos)
-    pad.paste(img2, temp_text_pos)
+    pad.paste(hr_text, hr_text_pos)
+    pad.paste(temp_text, temp_text_pos)
     pad.paste(heart, heart_pos)
     pad.paste(thermo, thermo_pos)
 
