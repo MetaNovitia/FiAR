@@ -1,5 +1,8 @@
 class Color4:
     transparent = (0,0,0,0)
+    l_yellow    = (255,255,80,150)
+    l_blue      = (100,150,255,150)
+    l_red       = (255,0,0,150)
 
 class Color3:
     red         = (255,0,0)

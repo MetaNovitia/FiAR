@@ -41,7 +41,7 @@ while(True):
     
     # clear and redraw
     drawing.rectangle([(0,0),img_size],fill=Color4.transparent)
-    drawing.text((0,0)),str(int(temperature)), font=font, fill=Color3.black)
+    drawing.text((0,0),str(int(temperature)), font=font, fill=Color3.black)
 
     # create overlay using drawing
     pad.paste(img, temp_text_pos)
