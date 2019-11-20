@@ -1,5 +1,5 @@
 import picamera
-from spi import readAdc, getTemperature
+from spi import readAdc, getTemperature, setupSpiPins
 from PIL import Image, ImageDraw, ImageFont
 from time import sleep
 from colors import Color3, Color4
@@ -12,6 +12,7 @@ MOSI    = 24
 CS      = 25
 channel = 0
 rref    = 1000
+setupSpiPins(CLK, MISO, MOSI, CS)
 
 img_size        = (500,90)
 screen_size     = (1280,720)
@@ -41,15 +42,17 @@ pad.paste(img2, temp_text_pos)
 pad.paste(heart, heart_pos)
 pad.paste(thermo, thermo_pos)
 overlay = camera.add_overlay(pad.tobytes(),format="rgba",size=pad.size)
+temperature = 0
 #---------- setup ----------#
 
 
 while(True):
     # Get ADC value and convert to temperature
-    # ADC_value = readAdc(channel, CLK, MISO, MOSI, CS)
-    ADC_value = random.randint(160,170)
+    ADC_value = readAdc(channel, CLK, MISO, MOSI, CS)
+    #ADC_value = random.randint(160,170)
     heartrate   = str(random.randint(160,170))
-    temperature = str(random.randint(160,170))
+    try: temperature = getTemperature(ADC_value, rref)
+    except ZeroDivisionError: pass
     sleep(0.5)
     
     # clear and redraw
