@@ -88,11 +88,11 @@ if __name__ == '__main__':
             ADC_sum += ADC_value
             ADC_count += 1
             ADC_average = ADC_sum/ADC_count
-            temperature = getTemperature(ADC_value,rref)
-            avg_temperature = getTemperature(ADC_average,rref)
+            #temperature = getTemperature(ADC_value,rref)
+            #avg_temperature = getTemperature(ADC_average,rref)
             
             print("ADC Result: ", str(ADC_value), " Average: ", str(ADC_average)[:5])
-            print("Temperature Result: ", str(temperature), " Temperature Average: ", str(avg_temperature)[:5])
+            #print("Temperature Result: ", str(temperature), " Temperature Average: ", str(avg_temperature)[:5])
             print()
             
             time.sleep(period)
