@@ -1,96 +1,113 @@
-import RPi.GPIO as GPIO
 import time, math
 import sys
+import spidev
 
-CLK = 18
-MISO = 23
-MOSI = 24
-CS = 25
+#set up for SPI
+spi = spidev.SpiDev()
+spi.open(0,0)
 
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BCM)
+spi.max_speed_hz = 1000000
 
-def setupSpiPins(clkPin, misoPin, mosiPin, csPin):
-    ''' Set all pins as an output except MISO (Master Input, Slave Output)'''
-    GPIO.setup(clkPin, GPIO.OUT)
-    GPIO.setup(misoPin, GPIO.IN)
-    GPIO.setup(mosiPin, GPIO.OUT)
-    GPIO.setup(csPin, GPIO.OUT)
-     
 
-def readAdc(channel, clkPin, misoPin, mosiPin, csPin):
-    if (channel < 0) or (channel > 7):
-        print("Invalid ADC Channel number, must be between [0,7]")
-        return -1
-        
-    # Datasheet says chip select must be pulled high between conversions
-    GPIO.output(csPin, GPIO.HIGH)
-    
-    # Start the read with both clock and chip select low
-    GPIO.output(csPin, GPIO.LOW)
-    GPIO.output(clkPin, GPIO.HIGH)
-    
-    # read command is:
-    # start bit = 1
-    # single-ended comparison = 1 (vs. pseudo-differential)
-    # channel num bit 2
-    # channel num bit 1
-    # channel num bit 0 (LSB)
-    read_command = 0x18
-    read_command |= channel
-    
-    sendBits(read_command, 5, clkPin, mosiPin)
-    
-    adcValue = recvBits(12, clkPin, misoPin)
-    
-    # Set chip select high to end the read
-    GPIO.output(csPin, GPIO.HIGH)
-  
-    return adcValue
-    
-def sendBits(data, numBits, clkPin, mosiPin):
-    ''' Sends 1 Byte or less of data'''
-    
-    data <<= (8 - numBits)
-    
-    for bit in range(numBits):
-        # Set RPi's output bit high or low depending on highest bit of data field
-        if data & 0x80:
-            GPIO.output(mosiPin, GPIO.HIGH)
-        else:
-            GPIO.output(mosiPin, GPIO.LOW)
-        
-        # Advance data to the next bit
-        data <<= 1
-        
-        # Pulse the clock pin HIGH then immediately low
-        GPIO.output(clkPin, GPIO.HIGH)
-        GPIO.output(clkPin, GPIO.LOW)
+# Setup for heartrate variables
+BPM = 0
+IBI = 600                  # 600ms per beat = 100 Beats Per Minute (BPM)
+Pulse = False
+sampleCounter = 0
+lastBeatTime = 0
+P = 512                    # peak at 1/2 the input range of 0..1023
+T = 512                    # trough at 1/2 the input range.
+thresh = 550               # threshold a little above the trough
+threshSetting = 550
+amp = 100                  # beat amplitude 1/10 of input range.
+firstBeat = True           # looking for the first beat
+secondBeat = False         # not yet looking for the second beat in a row
 
-def recvBits(numBits, clkPin, misoPin):
-    '''Receives arbitrary number of bits'''
-    retVal = 0
-    
-    for bit in range(numBits):
-        # Pulse clock pin 
-        GPIO.output(clkPin, GPIO.HIGH)
-        GPIO.output(clkPin, GPIO.LOW)
+
+def ReadChannel(channel):
+        ''' Read input at ADC channel
+        @param channel: channel of ADC to read
+        @return: processed digital data
         
-        # Read 1 data bit in
-        if GPIO.input(misoPin):
-            retVal |= 0x1
+        channel 0: heart rate sensor
+        channel 1: thermistor
+        '''
+
+	adc = spi.xfer2([1,(8+channel)<<4,0])
+	data = ((adc[1]&3) << 8) + adc[2]
+
+	return data
+
+def heartRate(sampleInterval):
+        ''' Processes digital data from function ReadChannel(),
+        creates heart rate info, and then outputs to global
+        var BPM
         
-        # Advance input to next bit
-        retVal <<= 1
-    
-    # Divide by two to drop the NULL bit
-    return (retVal/2)
+        '''
+        global BPM, IBI, Pulse, sampleCounter, lastBeatTime
+        global P, T, thresh, amp, firstBeat, secondBeat, threshSetting
+
+        Signal = ReadChannel(0)
+        sampleCounter += sampleInterval*1000        # keep track of the time in mS with this variable
+        N = int(sampleCounter - lastBeatTime)    # monitor the time since the last beat to avoid noise
+
+        #  find the peak and trough of the pulse wave
+        if (Signal < thresh and N > (IBI / 5) * 3) : # avoid dichrotic noise by waiting 3/5 of last IBI
+            if (Signal < T) :                         
+                T = Signal                            
+
+        if (Signal > thresh and Signal > P) :       # thresh condition helps avoid noise
+            P = Signal                              
+
+        if (N > 250):                            # avoid high frequency noise
+            if ( (Signal > thresh) and (Pulse == False) and (N > (IBI / 5) * 3) ):
+                Pulse = True                          
+                IBI = int(sampleCounter - lastBeatTime)    # measure time between beats in mS
+                lastBeatTime = sampleCounter          # keep track of time for next pulse
+
+                if (secondBeat) :                      
+                    secondBeat = False                 
+
+                if (firstBeat) :                  
+                    firstBeat = False                   
+                    secondBeat = True                  
+                # IBI value is unreliable so discard it
+                    return
+                
+                BPM = 60000 / IBI
+        
+        if (Signal < thresh and Pulse == True):
+            Pulse = False
+            amp = P - T
+            thresh = amp / 2 + T
+            P = thresh
+            T = thresh
+            
+        if (N > 2500):
+            thresh = threshSetting
+            P = 512
+            T = 512
+            lastBeatTime = sampleCounter
+            firstBeat = True
+            secondBeat = False
+            BPM = 0
+            IBI = 600
+            Pulse = False
+            amp = 0
 
 def toFarenheit(temp_c):
+    ''' Returns temperature as Farenheit
+    @param temp_c: temperature in Celcius
+    @return: temperature in Farenheit
+    '''
     return (temp_c * 9 / 5) + 32
 
-def getTemperature(ADC_value,rref):
-    #T0 = 
+def getTemperature(ADC_value,rref = 1000):
+    ''' Converts ADC temperature value into degrees Farenheit
+    @param ADC_value: digital value from ADC
+    @param rref: reference resistance value (default value: 1000)
+    @return: temperature in degrees Farenheit
+    '''
     temperature = 1/( (1/(273+25))+(1/(3830))*math.log(((1023/ADC_value - 1) * rref)/5000))-273
     return toFarenheit(temperature)
 
@@ -103,11 +120,9 @@ if __name__ == '__main__':
         period = 0.1
         rref = 1000
         
-        setupSpiPins(CLK, MISO, MOSI, CS)
-        
         while True:
             
-            ADC_value = readAdc(0, CLK, MISO, MOSI, CS)
+            ADC_value = ReadChannel(0)
             
             ADC_sum += ADC_value
             ADC_count += 1
@@ -122,5 +137,4 @@ if __name__ == '__main__':
             time.sleep(period)
             
     except KeyboardInterrupt:       # stop when pressing control + C
-        GPIO.cleanup()
         sys.exit(0)
