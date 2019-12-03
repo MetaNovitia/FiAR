@@ -109,10 +109,12 @@ highestHR = 200
 
 img_size        = (500,90)     
 screen_size     = (1280,720)
+warn_size       = (1260,700)
 temp_text_pos   = (1050,500)
 hr_text_pos     = (1050,580)
 heart_pos       = (980,510)
 thermo_pos      = (980,590)
+warning_x       = 1160
 font_size       = 50
 
 #initialze camera
@@ -128,10 +130,19 @@ temp_text   = ImageDraw.Draw(img)
 img2        = Image.new('RGBA',img_size,color=Color4.transparent)
 hr_text     = ImageDraw.Draw(img2)
 
+warn        = Image.new('RGBA',screen_size,color=Color4.transparent)
+warn_draw   = ImageDraw.Draw(warn)
+warn_draw.rectangle([(0,0),warn_size],fill=None, outline=Color3.yellow)
+
 
 heart       = Image.open("heart.png").resize((50,50))
 thermo      = Image.open("thermo.png").resize((50,50))
+warning     = Image.open("warning.png").resize((50,50))
 pad         = Image.new('RGBA', screen_size)
+
+masks       = []
+for i in range(10):
+    masks.append(Image.open("mask"+str(i)+".png").resize((55,50)).convert("L"))
 
 #initialize image overlay
 pad.paste(img, hr_text_pos)
@@ -169,12 +180,20 @@ while(True):
     try: temperature = getTemperature(ADC_temp, rref)
     except ZeroDivisionError: pass
     
-    
     # clear and redraw
     temp_text.rectangle([(0,0),img_size],fill=Color4.transparent)
     temp_text.text((0,0),str(int(temperature)), font=font, fill=Color3.black)
     hr_text.rectangle([(0,0),img_size],fill=Color4.transparent)
     hr_text.text((0,0),str(int(heartrate)), font=font, fill=Color3.black)
+
+    if temperature > 140 or heartrate > 200:
+        pad.paste(warn, (0,0))
+    if temperature > 140:
+        warning.putalpha(masks[int(time()*10)%10])
+        pad.paste(warning, (warning_x,thermo_pos[1]))
+    if heartrate > 200:
+        warning.putalpha(masks[int(time()*10)%10])
+        pad.paste(warning, (warning_x,heart_pos[1]))
 
     # create overlay using drawing
     pad.paste(img, hr_text_pos)
