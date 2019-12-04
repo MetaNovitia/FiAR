@@ -22,6 +22,7 @@ font_size       = 50
 #initialze camera
 camera = picamera.PiCamera()
 camera.resolution = screen_size
+camera.framerate = 60
 camera.exposure_mode = "sports"
 camera.start_preview()
 
