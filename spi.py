@@ -25,75 +25,75 @@ secondBeat = False         # not yet looking for the second beat in a row
 
 
 def ReadChannel(channel):
-        ''' Read input at ADC channel
-        @param channel: channel of ADC to read
-        @return: processed digital data
-        
-        channel 0: heart rate sensor
-        channel 1: thermistor
-        '''
+    ''' Read input at ADC channel
+    @param channel: channel of ADC to read
+    @return: processed digital data
+    
+    channel 0: heart rate sensor
+    channel 1: thermistor
+    '''
 
-	adc = spi.xfer2([1,(8+channel)<<4,0])
-	data = ((adc[1]&3) << 8) + adc[2]
+    adc = spi.xfer2([1,(8+channel)<<4,0])
+    data = ((adc[1]&3) << 8) + adc[2]
 
-	return data
+    return data
 
 def heartRate(sampleInterval):
-        ''' Processes digital data from function ReadChannel(),
-        creates heart rate info, and then outputs to global
-        var BPM
-        
-        '''
-        global BPM, IBI, Pulse, sampleCounter, lastBeatTime
-        global P, T, thresh, amp, firstBeat, secondBeat, threshSetting
+    ''' Processes digital data from function ReadChannel(),
+    creates heart rate info, and then outputs to global
+    var BPM
 
-        Signal = ReadChannel(0)
-        sampleCounter += sampleInterval*1000        # keep track of the time in mS with this variable
-        N = int(sampleCounter - lastBeatTime)    # monitor the time since the last beat to avoid noise
+    '''
+    global BPM, IBI, Pulse, sampleCounter, lastBeatTime
+    global P, T, thresh, amp, firstBeat, secondBeat, threshSetting
 
-        #  find the peak and trough of the pulse wave
-        if (Signal < thresh and N > (IBI / 5) * 3) : # avoid dichrotic noise by waiting 3/5 of last IBI
-            if (Signal < T) :                         
-                T = Signal                            
+    Signal = ReadChannel(0)
+    sampleCounter += sampleInterval*1000        # keep track of the time in mS with this variable
+    N = int(sampleCounter - lastBeatTime)    # monitor the time since the last beat to avoid noise
 
-        if (Signal > thresh and Signal > P) :       # thresh condition helps avoid noise
-            P = Signal                              
+    #  find the peak and trough of the pulse wave
+    if (Signal < thresh and N > (IBI / 5) * 3) : # avoid dichrotic noise by waiting 3/5 of last IBI
+        if (Signal < T) :                         
+            T = Signal                            
 
-        if (N > 250):                            # avoid high frequency noise
-            if ( (Signal > thresh) and (Pulse == False) and (N > (IBI / 5) * 3) ):
-                Pulse = True                          
-                IBI = int(sampleCounter - lastBeatTime)    # measure time between beats in mS
-                lastBeatTime = sampleCounter          # keep track of time for next pulse
+    if (Signal > thresh and Signal > P) :       # thresh condition helps avoid noise
+        P = Signal                              
 
-                if (secondBeat) :                      
-                    secondBeat = False                 
+    if (N > 250):                            # avoid high frequency noise
+        if ( (Signal > thresh) and (Pulse == False) and (N > (IBI / 5) * 3) ):
+            Pulse = True                          
+            IBI = int(sampleCounter - lastBeatTime)    # measure time between beats in mS
+            lastBeatTime = sampleCounter          # keep track of time for next pulse
 
-                if (firstBeat) :                  
-                    firstBeat = False                   
-                    secondBeat = True                  
-                # IBI value is unreliable so discard it
-                    return
-                
-                BPM = 60000 / IBI
-        
-        if (Signal < thresh and Pulse == True):
-            Pulse = False
-            amp = P - T
-            thresh = amp / 2 + T
-            P = thresh
-            T = thresh
+            if (secondBeat) :                      
+                secondBeat = False                 
+
+            if (firstBeat) :                  
+                firstBeat = False                   
+                secondBeat = True                  
+            # IBI value is unreliable so discard it
+                return
             
-        if (N > 2500):
-            thresh = threshSetting
-            P = 512
-            T = 512
-            lastBeatTime = sampleCounter
-            firstBeat = True
-            secondBeat = False
-            BPM = 0
-            IBI = 600
-            Pulse = False
-            amp = 0
+            BPM = 60000 / IBI
+
+    if (Signal < thresh and Pulse == True):
+        Pulse = False
+        amp = P - T
+        thresh = amp / 2 + T
+        P = thresh
+        T = thresh
+        
+    if (N > 2500):
+        thresh = threshSetting
+        P = 512
+        T = 512
+        lastBeatTime = sampleCounter
+        firstBeat = True
+        secondBeat = False
+        BPM = 0
+        IBI = 600
+        Pulse = False
+        amp = 0
 
 def toFarenheit(temp_c):
     ''' Returns temperature as Farenheit
@@ -114,7 +114,7 @@ def getTemperature(ADC_value,rref = 1000):
 
 if __name__ == '__main__':
     try:
-    
+
         ADC_sum = 0
         ADC_count = 0
         period = 0.1
