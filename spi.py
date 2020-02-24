@@ -95,21 +95,21 @@ def heartRate(sampleInterval):
             Pulse = False
             amp = 0
 
-def toFarenheit(temp_c):
-    ''' Returns temperature as Farenheit
+def toFahrenheit(temp_c):
+    ''' Returns temperature as Fahrenheit
     @param temp_c: temperature in Celcius
-    @return: temperature in Farenheit
+    @return: temperature in Fahrenheit
     '''
     return (temp_c * 9 / 5) + 32
 
 def getTemperature(ADC_value,rref = 1000):
-    ''' Converts ADC temperature value into degrees Farenheit
+    ''' Converts ADC temperature value into degrees Fahrenheit
     @param ADC_value: digital value from ADC
     @param rref: reference resistance value (default value: 1000)
-    @return: temperature in degrees Farenheit
+    @return: temperature in degrees Fahrenheit
     '''
-    temperature = 1/( (1/(273+25))+(1/(3830))*math.log(((1023/ADC_value - 1) * rref)/5000))-273
-    return toFarenheit(temperature)
+    temperature = 1/( (1/(273+25))+(1/(3434))*math.log(((1023/ADC_value - 1) * rref)/5000))-273
+    return toFahrenheit(temperature)
 
 
 if __name__ == '__main__':
