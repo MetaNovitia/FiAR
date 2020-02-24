@@ -4,6 +4,7 @@ from spi import ReadChannel, getTemperature, heartRate
 from PIL import Image, ImageDraw, ImageFont
 from time import sleep,time
 from colors import Color3, Color4
+import gps
 from gps import getGPS
 import random
 

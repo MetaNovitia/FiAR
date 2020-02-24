@@ -4,8 +4,9 @@ from spi import ReadChannel, getTemperature, heartRate
 from PIL import Image, ImageDraw, ImageFont
 from time import sleep,time
 from colors import Color3, Color4
-from gps import getGPS
-import random
+import gps_radio
+from gps_radio import getGPS
+import os
 
 #---------- setup ----------#
 rref    = 1000                 #reference resistance value 
@@ -59,6 +60,7 @@ overlay = camera.add_overlay(pad.tobytes(),format="rgba",size=pad.size)
 # data variables
 temperature         = 0
 location            = ""
+location_val        = -1
 temp_thresh         = 100   # TODO
 hr_thresh           = 100   # TODO
 flip                = 1
@@ -66,7 +68,7 @@ flip                = 1
 heartRates = []         #list of heart rates values
 HR_len = 0
 location_counter = 0
-fname = "data.txt"
+user = 0            # TODO 1 digit user
 
 #---------- setup ----------#
 while(True):
@@ -77,7 +79,11 @@ while(True):
     location_counter+=1
     location_counter%=20
     if location_counter == 0:
-        location = getGPS()
+        location_val = getGPS()
+        if location_val == -1: location = "Waiting for fix..."
+        else: location = (
+            'Lat: {0:.6f} degrees'.format(gps.latitude) + '\n' + 
+            'Long: {0:6f} degrees'.format(gps.longitude) )
     for i in range(500):
         sleep(0.001)
         currentTime = time()               #end of sampling interval for HR
@@ -129,15 +135,16 @@ while(True):
     camera.remove_overlay(overlay)
     overlay=overlay_temp
 
-    # save data for sending
-    """
-    format:
-    Lat: <lat> degrees
-    Long: <long> degrees
-    <temp>
-    <hr>
-    """
-    f = open(fname,'w')
-    f.write(location+"\n"+str(int(temperature))+"\n"+str(int(heartrate)))
-    f.close()
+    # call codesend, each 18 digits
+    if location_val != -1
+        lat_temp = str(int((location_val[0]+180)*100000))
+        long_temp = str(int((location_val[1]+180)*100000))
+        while len(lat_temp<8): lat_temp = "0"+lat_temp
+        while len(long_temp<8): long_temp = "0"+long_temp
+        loc_code = "1" + str(user) + lat_temp + long_temp
+        os.system("./codesend "+loc_code)
+    temp_code = "2" + str(user) + f'{int(temperature):016}'
+    os.system("./codesend "+temp_code)
+    hr_code = "3" + str(user) + f'{int(heartrate):016}'
+    os.system("./codesend "+hr_code)
 
