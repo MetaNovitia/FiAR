@@ -1,0 +1,22 @@
+steps:
+- write data to file data.txt  (loc, temp, hr) -> python overlay.py Pi1
+- set user variable -> c++ codesend Pi1
+- read from data.txt -> c++ codesend Pi1
+- send data (type, user, value) 2x -> c++ codesend Pi1
+- receive & write to cache-[user].txt -> c++ RSniffer Pi2
+- get cache-[user].txt -> python overlay.py Pi2
+- update overlays -> python overlay.py Pi2
+
+
+overlay:
+- fade point every second (up to 8 sec, 20%transparency)
+- green circle if good
+- slide to red when critical
+- triangle for critical temperature
+
+data.txt:
+- loc temp hr (sep=" ")
+
+cache-[user].txt:
+- loc temp hr ct (sep=" ")
+- ct: freshness of data, set from RSniffer %100

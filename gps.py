@@ -8,8 +8,6 @@ gps = adafruit_gps.GPS(uart, debug=False)
 gps.send_command(b'PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
 gps.send_command(b'PMTK220,1000')
 
-last_print = time.monotonic()
-
 def getGPS():
 	'''
 					print('Latitude: {0:.6f} degree'.format(gps.latitude))
@@ -24,12 +22,11 @@ def getGPS():
 			current = time.monotonic()
 			if current - last_print >= 10.0:'''
 	gps.update()
-	#last_print = current
+
 	if not gps.has_fix:
 		return ('Waiting for fix...')
-		#continue
 	
-	return ('Latitude: {0:.6f} degree'.format(gps.latitude) + '\n' +
-			'Longitude: {0:6f} degrees'.format(gps.longitude))
+	return ('Lat: {0:.6f} degrees'.format(gps.latitude) + '\n' +
+			'Long: {0:6f} degrees'.format(gps.longitude))
 					
 				

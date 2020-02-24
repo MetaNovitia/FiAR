@@ -4,16 +4,13 @@ from colors import Color3, Color4
 import random
 
 #---------- setup ----------#
-CLK     = 18
-MISO    = 23
-MOSI    = 24
-CS      = 25
-channel = 0
 rref    = 1000
+lowestHR = 40
+highestHR = 200
 
 img_size        = (200,90)
 screen_size     = (1280,720)
-warn_size     = (1260,700)
+warn_size       = (1270,710)
 temp_text_pos   = (1050,500)
 heart_text_pos  = (1050,580)
 thermo_pos      = (980,510)
@@ -35,10 +32,6 @@ heart       = Image.open("heart.png").resize((50,50))
 thermo      = Image.open("thermo.png").resize((50,50))
 warning     = Image.open("warning.png").resize((55,50))
 pad         = Image.new('RGBA', screen_size)
-
-masks       = []
-for i in range(10):
-    masks.append(Image.open("mask"+str(i)+".png").resize((55,50)).convert("L"))
 
 prev_temperature    = -1
 prev_heartrate      = -1
@@ -66,9 +59,7 @@ pad.paste(img, temp_text_pos)
 pad.paste(img2, heart_text_pos)
 pad.paste(heart, heart_pos)
 pad.paste(thermo, thermo_pos)
-warning.putalpha(masks[3])
 pad.paste(warning, (warning_x,thermo_pos[1]))
-warning.putalpha(masks[7])
 pad.paste(warning, (warning_x,heart_pos[1]))
 pad.save("new.png")
 
