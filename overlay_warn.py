@@ -13,7 +13,8 @@ rref    = 1000                 #reference resistance value
 lowestHR = 40
 highestHR = 200
 
-img_size        = (500,90)     
+img_size        = (500,90)  
+loc_size        = (700,180)     
 screen_size     = (1280,720)
 temp_text_pos   = (1050,500)
 hr_text_pos     = (1050,580)
@@ -64,7 +65,7 @@ flip                = 1
 
 heartRates = []         #list of heart rates values
 HR_len = 0
-location_counter = 0
+location_counter = -1
 
 #---------- setup ----------#
 while(True):
